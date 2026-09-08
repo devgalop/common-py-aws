@@ -1,2 +1,16 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "common-py-aws"
+version = "0.1.0"
+description = "Thin typed wrapper around AWS SQS for Python"
+authors = [{name = "devgalop"}]
+readme = "README.md"
+requires-python = ">=3.9"
+dependencies = ["boto3>=1.28.0"]
+license = {text = "MIT"}
+
 [tool.pytest.ini_options]
 pythonpath = ["src"]

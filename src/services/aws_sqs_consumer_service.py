@@ -1,12 +1,9 @@
 import asyncio
-from abc import ABC, abstractmethod
-from models.consumers.aws_sqs_consumer_config import (
-    SqsConsumerConfig,
-)
-from models.consumers.aws_sqs_messages import SqsMessageReceived
-from services.aws_sqs_connection_factory import (
-    SqsConnection,
-)
+from abc import ABC
+from ..contracts.consumer_handler import ConsumerHandler
+from ..models.consumers.aws_sqs_consumer_config import SqsConsumerConfig
+from ..models.consumers.aws_sqs_messages import SqsMessageReceived
+from .aws_sqs_connection_factory import SqsConnection
 
 
 class SqsConsumerService(ABC):
@@ -17,9 +14,13 @@ class SqsConsumerService(ABC):
     Args:
         ABC (_type_): The abstract base class for the consumer service.
     """
-    def __init__(self, sqs_client: SqsConnection, sqs_config: SqsConsumerConfig):
+    def __init__(self, 
+                 sqs_client: SqsConnection, 
+                 sqs_config: SqsConsumerConfig,
+                 sqs_handler: ConsumerHandler):
         self.sqs_client = sqs_client
         self.sqs_config = sqs_config
+        self.sqs_handler = sqs_handler
         self._task: asyncio.Task | None = None
         self._stopping = False
 
@@ -59,7 +60,22 @@ class SqsConsumerService(ABC):
                             message["Attributes"].get("ApproximateReceiveCount", 0)
                         ),
                     )
-                    result = await self.process_message(message_recieved)
+                    result = await self.sqs_handler.process_message(message_recieved)
+                    if (not result 
+                        and message_recieved.retry_count >= self.sqs_config.max_retries):
+                        # Send message to DLQ if configured
+                        if self.sqs_config.dlq_url is not None:
+                            await asyncio.to_thread(
+                                self.sqs_client.client.send_message,
+                                QueueUrl=self.sqs_config.dlq_url,
+                                MessageBody=message_recieved.body,
+                            )
+                        # Delete the message from the main queue after exceeding max retries
+                        await asyncio.to_thread(
+                            self.sqs_client.client.delete_message,
+                            QueueUrl=self.sqs_config.queue_url,
+                            ReceiptHandle=message_recieved.receipt_handle,
+                        )
                     if result:
                         await asyncio.to_thread(
                             self.sqs_client.client.delete_message,
@@ -69,20 +85,6 @@ class SqsConsumerService(ABC):
             except Exception as e:
                 print(f"Error processing messages: {e}")
             await asyncio.sleep(30)
-
-    @abstractmethod
-    async def process_message(self, message: SqsMessageReceived) -> bool:
-        """Processes a single SQS message.
-
-        Subclasses must implement this method to define custom message processing logic.
-
-        Args:
-            message (SqsMessageReceived): The received SQS message to process.
-
-        Returns:
-            bool: True if the message was successfully processed and should be deleted from the queue, False otherwise.
-        """
-        pass
 
     async def stop_consumer(self):
         """Stops the SQS consumer service.

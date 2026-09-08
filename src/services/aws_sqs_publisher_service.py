@@ -1,27 +1,33 @@
-from services.aws_sqs_connection_factory import (
-    SqsConnection,
-)
-from models.publisher.aws_sqs_publish_request import SqsPublishMessageRequest
+from ..contracts.publisher_service import PublisherService, PublishMessageRequest, PublishMessageResponse
+from ..models.publisher.aws_sqs_publish_request import SqsPublishMessageRequest
+from .aws_sqs_connection_factory import SqsConnection
 
-class SqsPublisherService:
+
+class SqsPublisherService(PublisherService):
+    """SQS publisher service implementing the PublisherService contract.
+
+    Args:
+        sqs_client (SqsConnection): The SQS connection to use for publishing.
+    """
     def __init__(self, sqs_client: SqsConnection):
         self.sqs_client = sqs_client
 
-    def publish(self, request: SqsPublishMessageRequest) -> bool:
+    async def publish(self, request: PublishMessageRequest) -> PublishMessageResponse:
         """Publish a message to the specified SQS queue.
 
         Args:
-            request (SqsPublishMessageRequest): The request containing the queue URL and message.
+            request (PublishMessageRequest): The request containing the queue URL and message.
 
         Returns:
-            bool: The result of the publish operation.
+            PublishMessageResponse: The result of the publish operation.
         """
+        try:
+            response = self.sqs_client.client.send_message(
+                QueueUrl=request.get_url(), MessageBody=request.get_message()
+            )
+            if response.get("ResponseMetadata", {}).get("HTTPStatusCode") != 200:
+                return PublishMessageResponse(success=False, message="Unexpected HTTP status code")
 
-        response = self.sqs_client.client.send_message(
-            QueueUrl=request.queue_url, MessageBody=request.message
-        )
-        if response.get("ResponseMetadata", {}).get("HTTPStatusCode") != 200:
-            return False
-
-        return True
-
+            return PublishMessageResponse(success=True, message="Message published successfully")
+        except Exception as e:
+            return PublishMessageResponse(success=False, message=str(e))

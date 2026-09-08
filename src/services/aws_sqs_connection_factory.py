@@ -1,6 +1,6 @@
 from typing import Any
 import boto3
-from models.aws_sqs_client import SqsConnectionRequest
+from ..models.aws_sqs_client import SqsConnectionRequest
 
 
 class SqsConnection:
