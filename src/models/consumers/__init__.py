@@ -4,9 +4,9 @@ from .aws_sqs_consumer_config import SqsConsumerConfig
 from .aws_sqs_redrive_policy import SqsRedrivePolicy
 
 __all__ = [
-    "SqsQueue", 
-    "SqsMessageReceived", 
-    "SqsConsumerConfig", 
-    "SqsQueueAttributes", 
-    "SqsRedrivePolicy"
+    "SqsQueue",
+    "SqsMessageReceived",
+    "SqsConsumerConfig",
+    "SqsQueueAttributes",
+    "SqsRedrivePolicy",
 ]

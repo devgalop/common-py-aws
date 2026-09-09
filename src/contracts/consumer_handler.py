@@ -1,8 +1,9 @@
 from abc import ABC, abstractmethod
 from ..models.consumers.aws_sqs_messages import SqsMessageReceived
 
+
 class ConsumerHandler(ABC):
-    
+
     @abstractmethod
     async def process_message(self, message: SqsMessageReceived) -> bool:
         """Processes a single SQS message.

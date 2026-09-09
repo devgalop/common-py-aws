@@ -10,14 +10,17 @@ class SqsConsumerService(ABC):
     """Represents an abstract SQS consumer service.
     This class provides the basic structure and functionality for consuming messages from an SQS queue.
     Subclasses must implement the `process_message` method to define custom message processing logic.
-    
+
     Args:
         ABC (_type_): The abstract base class for the consumer service.
     """
-    def __init__(self, 
-                 sqs_client: SqsConnection, 
-                 sqs_config: SqsConsumerConfig,
-                 sqs_handler: ConsumerHandler):
+
+    def __init__(
+        self,
+        sqs_client: SqsConnection,
+        sqs_config: SqsConsumerConfig,
+        sqs_handler: ConsumerHandler,
+    ):
         self.sqs_client = sqs_client
         self.sqs_config = sqs_config
         self.sqs_handler = sqs_handler
@@ -61,8 +64,10 @@ class SqsConsumerService(ABC):
                         ),
                     )
                     result = await self.sqs_handler.process_message(message_recieved)
-                    if (not result 
-                        and message_recieved.retry_count >= self.sqs_config.max_retries):
+                    if (
+                        not result
+                        and message_recieved.retry_count >= self.sqs_config.max_retries
+                    ):
                         # Send message to DLQ if configured
                         if self.sqs_config.dlq_url is not None:
                             await asyncio.to_thread(

@@ -7,12 +7,9 @@ class SqsConnectionRequest:
         secret_key (str): The secret key for authentication.
         region (str): The AWS region for the SQS service.
     """
+
     def __init__(
-        self, 
-        endpoint_url: str, 
-        access_key: str, 
-        secret_key: str, 
-        region: str
+        self, endpoint_url: str, access_key: str, secret_key: str, region: str
     ):
         self.endpoint_url = endpoint_url
         self.access_key = access_key

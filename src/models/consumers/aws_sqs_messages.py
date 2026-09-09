@@ -26,12 +26,9 @@ class SqsMessageReceived:
         receipt_handle (str): The receipt handle associated with the message.
         retry_count (int, optional): The number of times the message has been retried. Defaults to 0.
     """
+
     def __init__(
-        self, 
-        message_id: str, 
-        body: str, 
-        receipt_handle: str, 
-        retry_count: int = 0
+        self, message_id: str, body: str, receipt_handle: str, retry_count: int = 0
     ):
         self.message_id = message_id
         self.body = body
