@@ -7,8 +7,10 @@ __all__ = [
     "SqsConnectionRequest",
     "SqsPublishMessageRequest",
     "SqsQueue",
+    "SqsQueueAttributes",
     "SqsMessageReceived",
     "SqsConsumerConfig",
+    "SqsRedrivePolicy",
     # Services
     "SqsConnection",
     "SqsConnectionFactoryService",

@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 
 
 class PublishMessageRequest(ABC):
-    
+
     @abstractmethod
     def get_url(self) -> str:
         """Retrieve the URL of the queue to which the message will be published.
@@ -11,7 +11,7 @@ class PublishMessageRequest(ABC):
             str: The URL of the queue.
         """
         pass
-    
+
     @abstractmethod
     def get_message(self) -> str:
         """Retrieve the message to be published.

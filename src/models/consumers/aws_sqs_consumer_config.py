@@ -9,6 +9,7 @@ class SqsConsumerConfig:
         max_retries (int, optional): The maximum number of times a message can be retried before being sent to the DLQ. Defaults to 3.
         dlq_url (str, optional): The URL of the dead-letter queue (DLQ) where messages exceeding max retries are sent. Defaults to None.
     """
+
     def __init__(
         self,
         queue_url: str,
@@ -16,7 +17,7 @@ class SqsConsumerConfig:
         wait_time_seconds: int = 20,
         is_enabled: bool = False,
         max_retries: int = 3,
-        dlq_url: str | None = None, 
+        dlq_url: str | None = None,
     ):
         self.queue_url = queue_url
         self.max_messages = max_messages

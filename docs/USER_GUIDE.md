@@ -8,7 +8,7 @@ A thin typed wrapper around AWS SQS for Python. This guide walks from setup to p
 
 - Python >= 3.9
 - AWS account with SQS permissions
-- AWS access key and secret key (no IAM role / profile / env-var support yet)
+- AWS access key and secret key **or** IAM role / environment credentials (see Connection Setup)
 
 ---
 
@@ -25,7 +25,7 @@ Requires: `boto3 >= 1.28.0`
 
 ## Connection Setup
 
-Create a connection using explicit credentials:
+### Option A — Explicit Credentials (default)
 
 ```python
 from common_py_aws import SqsConnectionRequest, SqsConnectionFactoryService
@@ -38,6 +38,22 @@ request = SqsConnectionRequest(
 )
 connection = SqsConnectionFactoryService(request).create_connection()
 ```
+
+### Option B — IAM Role / Environment Credentials
+
+When running on EC2, ECS, Lambda, or with `AWS_*` environment variables configured:
+
+```python
+from common_py_aws import SqsConnectionRequest, SqsConnectionFactoryService
+
+request = SqsConnectionRequest(
+    endpoint_url="https://sqs.us-east-1.amazonaws.com",
+    region="us-east-1",
+)
+connection = SqsConnectionFactoryService(request).create_connection(should_use_iam=True)
+```
+
+`should_use_iam=True` tells boto3 to resolve credentials from the environment, IAM role, or AWS credential chain. `access_key` and `secret_key` are not required.
 
 `connection` is a `SqsConnection` wrapping a boto3 SQS client.
 
@@ -54,6 +70,29 @@ print(queue.name)        # "my-queue"
 ```
 
 `create_queue` is **idempotent** — if the queue already exists, it returns the existing queue without error.
+
+### With Dead-Letter Queue (Redrive Policy)
+
+Attach a DLQ so failed messages are automatically routed after a max receive count:
+
+```python
+from common_py_aws import SqsCreatorService, SqsRedrivePolicy
+
+dlq_policy = SqsRedrivePolicy(
+    dead_letter_target_arn="arn:aws:sqs:us-east-1:123456789012:my-queue-dlq",
+    max_receive_count=5,
+)
+queue = SqsCreatorService(connection).create_queue("my-queue", redrive_policy=dlq_policy)
+```
+
+### Getting Queue Attributes
+
+```python
+attrs = SqsCreatorService(connection).get_queue_attributes(queue.queue_url)
+print(attrs.queue_arn)
+print(attrs.aprox_number_of_messages)
+print(attrs.aprox_number_of_messages_in_transit)
+```
 
 ---
 
@@ -124,6 +163,13 @@ await consumer.stop_consumer()
 | `wait_time_seconds` | `int` | `20` | Long polling wait time (0–20). |
 | `is_enabled` | `bool` | `False` | When `False`, consumer sleeps 30s then re-checks. Does not pause/resume. |
 
+## SqsRedrivePolicy Fields
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `dead_letter_target_arn` | `str` | ARN of the dead-letter queue that receives failed messages. |
+| `max_receive_count` | `int` | Max receive attempts before a message is sent to the DLQ. |
+
 ---
 
 ## ConsumerHandler Return Semantics
@@ -146,7 +192,7 @@ The consumer loop:
 5. Deletes the message if handler returns `True`.
 6. Catches **all exceptions** in the loop, prints them, and continues.
 
-**There is no retry or dead-letter handling** — implement this in your `process_message` handler if needed.
+**Retry and DLQ routing** are handled by SQS itself when a redrive policy is attached. Messages that exceed `max_receive_count` are automatically sent to the dead-letter queue. The consumer loop itself does not implement retries — implement custom retry logic in your `process_message` handler if needed.
 
 ---
 
@@ -175,10 +221,11 @@ from common_py_aws import (
     ConsumerHandler,
     SqsPublishMessageRequest,
     SqsMessageReceived,
+    SqsRedrivePolicy,
 )
 
 async def main():
-    # Connect
+    # Connect (use should_use_iam=True for IAM role / env credentials)
     request = SqsConnectionRequest(
         endpoint_url="https://sqs.us-east-1.amazonaws.com",
         access_key="YOUR_KEY",
@@ -187,8 +234,12 @@ async def main():
     )
     connection = SqsConnectionFactoryService(request).create_connection()
 
-    # Create queue
-    queue = SqsCreatorService(connection).create_queue("my-queue")
+    # Create queue with DLQ redrive policy
+    dlq = SqsRedrivePolicy(
+        dead_letter_target_arn="arn:aws:sqs:us-east-1:123456789012:my-queue-dlq",
+        max_receive_count=5,
+    )
+    queue = SqsCreatorService(connection).create_queue("my-queue", redrive_policy=dlq)
 
     # Publish
     publisher = SqsPublisherService(connection)

@@ -1,5 +1,8 @@
-from ..contracts.publisher_service import PublisherService, PublishMessageRequest, PublishMessageResponse
-from ..models.publisher.aws_sqs_publish_request import SqsPublishMessageRequest
+from ..contracts.publisher_service import (
+    PublisherService,
+    PublishMessageRequest,
+    PublishMessageResponse,
+)
 from .aws_sqs_connection_factory import SqsConnection
 
 
@@ -9,6 +12,7 @@ class SqsPublisherService(PublisherService):
     Args:
         sqs_client (SqsConnection): The SQS connection to use for publishing.
     """
+
     def __init__(self, sqs_client: SqsConnection):
         self.sqs_client = sqs_client
 
@@ -26,8 +30,12 @@ class SqsPublisherService(PublisherService):
                 QueueUrl=request.get_url(), MessageBody=request.get_message()
             )
             if response.get("ResponseMetadata", {}).get("HTTPStatusCode") != 200:
-                return PublishMessageResponse(success=False, message="Unexpected HTTP status code")
+                return PublishMessageResponse(
+                    success=False, message="Unexpected HTTP status code"
+                )
 
-            return PublishMessageResponse(success=True, message="Message published successfully")
+            return PublishMessageResponse(
+                success=True, message="Message published successfully"
+            )
         except Exception as e:
             return PublishMessageResponse(success=False, message=str(e))

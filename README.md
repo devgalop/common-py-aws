@@ -9,6 +9,8 @@ A thin typed wrapper around AWS SQS for Python. Send and receive messages from S
 - **Long-polling consumer** — Configurable `WaitTimeSeconds` for cost-efficient polling
 - **Handler pattern** — Implement `ConsumerHandler` to define message processing logic
 - **Idempotent queue creation** — `SqsCreatorService.create_queue()` returns existing queue if present
+- **DLQ / Redrive Policy** — Attach dead-letter queues via `SqsRedrivePolicy` on queue creation
+- **IAM authentication** — Use `should_use_iam=True` for role-based connections (no explicit keys needed)
 
 ## Installation
 
@@ -47,8 +49,14 @@ request = SqsConnectionRequest(
 )
 connection = SqsConnectionFactoryService(request).create_connection()
 
-# 2. Create queue (idempotent)
-queue = SqsCreatorService(connection).create_queue("my-queue")
+# 2. Create queue (idempotent, optional DLQ)
+from common_py_aws import SqsRedrivePolicy
+
+dlq_policy = SqsRedrivePolicy(
+    dead_letter_target_arn="arn:aws:sqs:us-east-1:123456789012:my-dlq",
+    max_receive_count=5,
+)
+queue = SqsCreatorService(connection).create_queue("my-queue", redrive_policy=dlq_policy)
 
 # 3. Publish async message
 async def send_message():
@@ -90,6 +98,7 @@ services/        # Concrete implementations (SqsPublisherService, etc.)
 |-------|------------|
 | `SqsConnectionRequest` | `endpoint_url`, `access_key`, `secret_key`, `region` |
 | `SqsConsumerConfig` | `queue_url`, `max_messages`, `wait_time_seconds`, `is_enabled` |
+| `SqsRedrivePolicy` | `dead_letter_target_arn`, `max_receive_count` |
 
 ## Important Behaviors
 
@@ -100,7 +109,9 @@ services/        # Concrete implementations (SqsPublisherService, etc.)
 | `process_message` returns `False` | Message stays in queue for next poll |
 | Exception in handler | Printed to stdout; loop continues |
 | `create_queue` | Idempotent — returns existing queue if already present |
-| Credentials | Explicit only; no IAM role / profile / env-var support yet |
+| `create_queue(redrive_policy=...)` | Attaches DLQ redrive policy to the new queue |
+| `create_connection()` | Explicit credentials (default) |
+| `create_connection(should_use_iam=True)` | IAM role / environment credentials (no keys needed) |
 
 ## License
 
