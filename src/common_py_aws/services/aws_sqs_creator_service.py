@@ -1,5 +1,4 @@
 from typing import Any
-import json
 from ..models.consumers.aws_sqs_redrive_policy import SqsRedrivePolicy
 from ..models.consumers.aws_sqs_queue import SqsQueue, SqsQueueAttributes
 from .aws_sqs_connection_factory import SqsConnection
@@ -18,7 +17,7 @@ class SqsCreatorService:
         queue_url: str = ""
         if redrive_policy:
             response = self.sqs_client.create_queue(
-                QueueName=queue_name, Attributes=json.dumps(redrive_policy.to_dict())
+                QueueName=queue_name, Attributes=redrive_policy.to_dict()
             )
             queue_url = response["QueueUrl"]
         else:

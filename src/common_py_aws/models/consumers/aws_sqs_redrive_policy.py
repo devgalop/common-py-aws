@@ -10,8 +10,8 @@ class SqsRedrivePolicy:
         self.dead_letter_target_arn = dead_letter_target_arn
         self.max_receive_count = max_receive_count
 
-    def to_dict(self) -> dict[str, str | int]:
+    def to_dict(self) -> dict[str, str]:
         return {
             "deadLetterTargetArn": self.dead_letter_target_arn,
-            "maxReceiveCount": self.max_receive_count,
+            "maxReceiveCount": str(self.max_receive_count),
         }
