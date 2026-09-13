@@ -54,6 +54,7 @@ class SqsConsumerService(ABC):
                     await asyncio.sleep(30)
                     continue
 
+                messages_received: list[SqsMessageReceived] = []
                 for message in messages.get("Messages", []):
                     message_recieved = SqsMessageReceived(
                         message_id=message["MessageId"],
@@ -63,6 +64,10 @@ class SqsConsumerService(ABC):
                             message["Attributes"].get("ApproximateReceiveCount", 0)
                         ),
                     )
+                    messages_received.append(message_recieved)
+                print(f"Total of received messages: {len(messages_received)}")
+
+                for message_recieved in messages_received:
                     result = await self.sqs_handler.process_message(message_recieved)
                     if (
                         not result
