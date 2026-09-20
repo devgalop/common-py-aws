@@ -8,6 +8,7 @@ class SqsConsumerConfig:
         is_enabled (bool, optional): Indicates whether the consumer is enabled. Defaults to False.
         max_retries (int, optional): The maximum number of times a message can be retried before being sent to the DLQ. Defaults to 3.
         dlq_url (str, optional): The URL of the dead-letter queue (DLQ) where messages exceeding max retries are sent. Defaults to None.
+        visibility_timeout_seconds (int, optional): The duration (in seconds) that the received messages are hidden from subsequent retrieve requests after being retrieved by a `ReceiveMessage` request. Defaults to 30.
     """
 
     def __init__(
@@ -18,6 +19,7 @@ class SqsConsumerConfig:
         is_enabled: bool = False,
         max_retries: int = 3,
         dlq_url: str | None = None,
+        visibility_timeout_seconds: int = 30,
     ):
         self.queue_url = queue_url
         self.max_messages = max_messages
@@ -25,3 +27,4 @@ class SqsConsumerConfig:
         self.is_enabled = is_enabled
         self.max_retries = max_retries
         self.dlq_url = dlq_url
+        self.visibility_timeout_seconds = visibility_timeout_seconds
