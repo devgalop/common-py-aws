@@ -48,6 +48,7 @@ class SqsConsumerService(ABC):
                     QueueUrl=self.sqs_config.queue_url,
                     MaxNumberOfMessages=self.sqs_config.max_messages,
                     WaitTimeSeconds=self.sqs_config.wait_time_seconds,
+                    VisibilityTimeout=self.sqs_config.visibility_timeout_seconds,
                     AttributeNames=["ApproximateReceiveCount"],
                 )
                 if not messages or "Messages" not in messages:
